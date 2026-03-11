@@ -1,0 +1,51 @@
+{
+  "students": [
+    {
+      "id": "1",
+      "name": "asmaa shiref",
+      "age": 12,
+      "gender": "Female",
+      "phone": "010999886733",
+      "joinDate": "2025-05-16",
+      "course": "C++",
+      "group": "python22",
+      "city": "tanta"
+    },
+    {
+      "id": "acb0",
+      "name": "ali mohmed",
+      "age": 10,
+      "gender": "Male",
+      "phone": "010999886733",
+      "joinDate": "2025-05-16",
+      "course": "Python",
+      "group": "python22",
+      "city": "tanta"
+    },
+    {
+      "id": "69cb",
+      "name": "yassen tarek",
+      "age": 9,
+      "gender": "Male",
+      "phone": "010999886733",
+      "joinDate": "2025-05-22",
+      "course": "Picto",
+      "group": "picto20",
+      "city": "cairo"
+    },
+    {
+      "id": "b370",
+      "name": "malek mohmed",
+      "age": 13,
+      "gender": "Male",
+      "phone": "010999886733",
+      "joinDate": "2025-05-22",
+      "course": "C++",
+      "group": "c++20",
+      "city": "tanta"
+    }
+  ],
+  "_types": {
+    "students.id": "number"
+  }
+}

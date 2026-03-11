@@ -1,0 +1,7 @@
+category create / edit fetch from api
+"courses"
+
+
+scp -r * root@72.60.44.72:/var/www/portal
+
+Ww1471991#Ww1471991#
