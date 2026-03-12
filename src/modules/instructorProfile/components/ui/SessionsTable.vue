@@ -48,11 +48,12 @@ Add Task
 
 <!-- لو فيه تاسك -->
 <button
-v-if="session.task"
-class="btn btn-primary btn-sm"
-@click="$emit('viewTask', session.task)"
+  @click="$emit('viewTask', session.task)"
+  :disabled="!session.task"
+  class="btn btn-secondary
+   btn-sm"
 >
-View Task
+  View Task
 </button>
 
 <button

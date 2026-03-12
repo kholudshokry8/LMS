@@ -32,5 +32,14 @@ addTask(sessionId, task) {
   deleteTask(taskId) {
     return api.delete(`/instructorProfile/tasks/${taskId}`);
   }
+  ,
+updateAttendance(sessionId, studentId) {
+  return api.post(
+    `/instructorProfile/groups/sessions/${sessionId}/attendance`,
+    {
+      student_id: studentId
+    }
+  ).then(res => res.data);
+}
 
 };

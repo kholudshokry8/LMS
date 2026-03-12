@@ -1,47 +1,44 @@
 <template>
+  <div class="container mt-4">
 
-<div class="container mt-4">
+    <h2 class="mb-4">Instructor Dashboard</h2>
 
-<h2 class="mb-4">Instructor Dashboard</h2>
+    <StatsCards :dashboard="dashboard"/>
 
-<StatsCards :dashboard="dashboard"/>
+    <GroupsTable
+      :groups="dashboard?.data"
+      @selectGroup="selectGroup"
+    />
 
-<GroupsTable
-  :groups="dashboard?.data"
-  @selectGroup="selectGroup"
-/>
+    <SessionsTable
+      v-if="selectedGroup"
+      :group="selectedGroup.data"
+      @viewStudents="openStudents"
+      @viewTask="openTask"
+      @deleteTask="deleteTask"
+      @addTask="openAddTask"
+    />
 
-<SessionsTable
-  v-if="selectedGroup"
-  :group="selectedGroup.data"
-  @viewStudents="openStudents"
-  @viewTask="openTask"
-  @deleteTask="deleteTask"
-  @addTask="openAddTask"
-/>
+    <StudentsTable
+      v-if="selectedSession"
+      :session="selectedSession"
+      @viewTask="openTask"
+      @evaluate="openEvaluate"
+    />
 
-<StudentsTable
- v-if="selectedSession"
- :session="selectedSession"
- @viewTask="openTask"
- @evaluate="openEvaluate"
-/>
+    <TaskDetailsModal
+      ref="taskModal"
+      :groupId="selectedGroup?.data?.id"
+    />
 
-<TaskDetailsModal
- ref="taskModal"
- :groupId="selectedGroup?.data?.id"
-/>
+    <EvaluateTaskModal
+      ref="evaluateModal"
+    />
 
-<EvaluateTaskModal
- ref="evaluateModal"
-/>
-
-</div>
-
+  </div>
 </template>
 
 <script setup>
-
 import { onMounted, computed, ref } from "vue";
 import { useInstructorProfileStore } from "../store/instructorProfileStore.js";
 
@@ -56,7 +53,6 @@ const store = useInstructorProfileStore();
 
 const dashboard = computed(() => store.dashboard);
 const selectedGroup = computed(() => store.selectedGroup);
-
 const selectedSession = ref(null);
 
 const taskModal = ref(null);
@@ -74,14 +70,39 @@ const openStudents = (session) => {
   selectedSession.value = session;
 };
 
-const openTask = (task) => {
-  taskModal.value.open(task);
+const openTask = (data) => {
+
+  if (!data) {
+    alert("Student has not submitted this task yet");
+    return;
+  }
+
+  const task = data.task;
+  const submission = data.submission;
+
+  taskModal.value.open({
+    title: task?.title || "No title",
+    description: task?.description || "No description",
+    due_date: task?.due_date || "",
+    submitted_at: submission?.submitted_at || "",
+    answer: submission?.answer || ""
+  });
+
 };
 
+const openEvaluate = (data) => {
+  if (!data || !data.submission || !data.taskId) {
+    alert("No task or submission found to evaluate");
+    return;
+  }
+  evaluateModal.value.open(data);
+};
 const openAddTask = (session) => {
   taskModal.value.openAdd(session);
 };
+
 const deleteTask = async (taskId) => {
+
   try {
 
     const res = await store.deleteTask(taskId);
@@ -94,13 +115,9 @@ const deleteTask = async (taskId) => {
 
     console.error(err);
 
-    alert("Failed to delete task: " + err.response?.data?.message);
+    alert("Failed to delete task");
 
   }
-};
 
-const openEvaluate = (submission) => {
-  evaluateModal.value.open(submission);
 };
-
 </script>

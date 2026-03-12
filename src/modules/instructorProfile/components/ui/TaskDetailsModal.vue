@@ -10,7 +10,7 @@
 
         <div class="modal-body">
 
-          <!-- Add Task Form -->
+          <!-- Add Task -->
           <div v-if="isAddMode">
 
             <div class="mb-3">
@@ -30,16 +30,29 @@
 
           </div>
 
-          <!-- Task Details -->
+          <!-- View Task -->
           <div v-else>
+
             <p><b>Title:</b> {{ task?.title }}</p>
+
             <p><b>Description:</b> {{ task?.description }}</p>
+
             <p><b>Due Date:</b> {{ task?.due_date }}</p>
+
+            <p v-if="task?.submitted_at">
+              <b>Submitted At:</b> {{ task.submitted_at }}
+            </p>
+
+            <p v-if="task?.answer">
+              <b>Student Answer:</b> {{ task.answer }}
+            </p>
+
           </div>
 
         </div>
 
         <div class="modal-footer">
+
           <button
             v-if="isAddMode"
             class="btn btn-success"
@@ -51,6 +64,7 @@
           <button class="btn btn-secondary" @click="close">
             Close
           </button>
+
         </div>
 
       </div>
@@ -59,7 +73,6 @@
 </template>
 
 <script setup>
-
 import { ref, computed } from "vue";
 import { useInstructorProfileStore } from "../../store/instructorProfileStore.js";
 
@@ -86,6 +99,7 @@ const open = (t) => {
   task.value = t;
 
   const modalInstance = new window.bootstrap.Modal(modal.value);
+
   modalInstance.show();
 
 };
@@ -100,10 +114,11 @@ const openAdd = (session) => {
     title: "",
     description: "",
     due_date: "",
-    session_id: session.id,
+    session_id: session.id
   };
 
   const modalInstance = new window.bootstrap.Modal(modal.value);
+
   modalInstance.show();
 
 };
@@ -130,19 +145,17 @@ const submitTask = async () => {
 
     close();
 
-    // refresh group correctly
     await store.fetchGroup(selectedGroup.value.data.id);
 
   } catch (err) {
 
     console.error(err);
 
-    alert("Failed to add task: " + err.response?.data?.message);
+    alert("Failed to add task");
 
   }
 
 };
 
 defineExpose({ open, openAdd });
-
 </script>

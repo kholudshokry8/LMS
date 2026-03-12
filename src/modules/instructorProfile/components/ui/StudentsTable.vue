@@ -1,82 +1,135 @@
 <template>
+  <div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Students - {{ session.session_title }}</h5>
+    </div>
 
-<h4 class="mt-4">
-Students
-</h4>
+    <div class="card-body p-0">
+      <div v-if="loading" class="text-center p-3">
+        Loading students...
+      </div>
 
-<table class="table table-bordered">
+      <table v-else class="table table-striped mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Name</th>
+            <th>Task Submitted</th>
+            <th>Attended</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-<thead>
+        <tbody>
+          <tr v-for="student in students" :key="student.id">
+            <td>{{ student.name }}</td>
+            <td>
+              <span v-if="student.task_submission">✅</span>
+              <span v-else>❌</span>
+            </td>
+            <td>
+              <span v-if="student.attended">✅</span>
+              <span v-else>❌</span>
+            </td>
+            <td class="d-flex gap-2">
+              <button
+                class="btn btn-sm btn-primary"
+                @click="$emit('viewTask', {
+                  task: session.task,
+                  submission: student.task_submission
+                })"
+                :disabled="!student.task_submission"
+              >
+                View Task
+              </button>
 
-<tr>
-<th>Name</th>
-<th>Attendance</th>
-<th>Task</th>
-<th>Evaluate</th>
-</tr>
+              <!-- زرار Evaluate -->
+              <button
+                class="btn btn-sm btn-success"
+                @click="openEvaluateModal(student)"
+                :disabled="!student.task_submission || !session.task"
+              >
+                Evaluate
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-</thead>
-
-<tbody>
-
-<tr
-v-for="a in session.attendances"
-:key="a.id"
->
-
-<td>{{a.student.name}}</td>
-
-<td>
-
-<span
-class="badge"
-:class="a.attended ? 'bg-success':'bg-secondary'"
->
-
-{{a.attended?'Present':'Absent'}}
-
-</span>
-
-</td>
-
-<td>
-
-<button
-class="btn btn-info btn-sm"
-@click="$emit('viewTask',session.task)"
->
-
-View Task
-
-</button>
-
-</td>
-
-<td>
-
-<button
-class="btn btn-primary btn-sm"
-@click="$emit('evaluate',a)"
->
-
-Evaluate
-
-</button>
-
-</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
+    <!-- Modal -->
+    <EvaluateModal ref="modalRef" @evaluated="fetchStudents" />
+  </div>
 </template>
 
 <script setup>
+import { ref, watch, onMounted } from "vue";
+import { useInstructorProfileStore } from "../../store/instructorProfileStore.js";
+import EvaluateModal from "./EvaluateTaskModal.vue";
 
-defineProps({
- session:Object
-})
+const props = defineProps({ session: Object });
 
+const store = useInstructorProfileStore();
+const students = ref([]);
+const loading = ref(false);
+
+const modalRef = ref(null);
+
+// فتح المودال عند الضغط على زر Evaluate
+const openEvaluateModal = (student) => {
+  if (!student.task_submission) return alert("No submission to evaluate");
+
+  modalRef.value.open({
+    submission: student.task_submission,
+    taskId: props.session.task?.id
+  });
+};
+
+// جلب الطلاب وربطهم بالـ submissions
+const fetchStudents = async () => {
+  const groupId = store.selectedGroup?.data?.id;
+  if (!groupId || !props.session?.id) return;
+
+  loading.value = true;
+  try {
+    await store.fetchGroup(groupId);
+    const group = store.selectedGroup?.data;
+
+    await store.fetchTaskSubmissions(props.session.id);
+
+    let submissions = [];
+    if (store.taskSubmissions) {
+      if (store.taskSubmissions.task && Array.isArray(store.taskSubmissions.task.submissions)) {
+        submissions = store.taskSubmissions.task.submissions;
+      } else if (Array.isArray(store.taskSubmissions)) {
+        submissions = store.taskSubmissions;
+      }
+    }
+
+    const sessionData = group.sessions?.find(s => s.id === props.session.id);
+
+    students.value = (group.students || []).map(student => {
+      const attendance = sessionData?.attendances?.find(
+        a => Number(a.student_id) === Number(student.id)
+      );
+      const submission = submissions.find(
+        sub => Number(sub.student_id) === Number(student.id)
+      ) || null;
+
+      return {
+        ...student,
+        task_submission: submission,
+        attended: attendance ? attendance.attended : false
+      };
+    });
+
+  } catch (err) {
+    console.error("Failed to fetch students:", err);
+    alert("Failed to fetch students");
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(fetchStudents);
+watch(() => props.session, fetchStudents);
 </script>
