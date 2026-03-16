@@ -105,23 +105,26 @@
       </div>
 
       <!-- Days -->
-      <div class="col-md-12">
-        <label class="form-label d-block">Select Days</label>
-        <div
-          class="form-check form-check-inline"
-          v-for="day in daysOptions"
-          :key="day"
-        >
-          <input
-            class="form-check-input"
-            type="checkbox"
-            :value="day"
-            v-model="form.days"
-            :id="`day-${day}`"
-          />
-          <label class="form-check-label" :for="`day-${day}`">{{ day }}</label>
-        </div>
-      </div>
+  <div class="col-md-12">
+  <label class="form-label">
+    Choose days (Ctrl + Click to select multiple)
+  </label>
+
+  <select
+    v-model="form.days"
+    multiple
+    size="7"
+    class="form-select"
+  >
+    <option
+      v-for="day in daysOptions"
+      :key="day"
+      :value="day"
+    >
+      {{ day }}
+    </option>
+  </select>
+</div>
 
       <!-- Submit -->
       <div class="col-12 mt-3">

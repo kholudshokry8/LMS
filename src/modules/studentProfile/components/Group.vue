@@ -2,7 +2,7 @@
   <div class="group-container" v-if="group">
     <!-- Header -->
     <h2 class="fw-bold text-center text-primary mb-2">🎓 {{ group.courseName }}</h2>
-    <p class="text-center text-muted mb-4">📅 Start Date: {{ group.startDate || 'N/A' }}</p>
+    <!-- <p class="text-center text-muted mb-4">📅 Start Date: {{ group.startDate || 'N/A' }}</p> -->
 
     <!-- Group Info -->
     <div class="group-info mb-4 pb-3 border-bottom">
@@ -53,9 +53,25 @@
             <td>{{ session.session_name }}</td>
             <td>{{ session.date_time }}</td>
             <td>
-              <span :class="session.attendance_status === 'Present' ? 'text-success' : 'text-danger'">
-                {{ session.attendance_status === 'Present' ? '✅ Present' : '❌ Absent' }}
-              </span>
+ <span
+  :class="{
+    'text-success': getAttendanceStatus(session) === 'attended',
+    'text-danger': getAttendanceStatus(session) === 'absent',
+    'text-warning': getAttendanceStatus(session) === 'upcoming'
+  }"
+>
+  <template v-if="getAttendanceStatus(session) === 'attended'">
+    ✅ Attended
+  </template>
+
+  <template v-else-if="getAttendanceStatus(session) === 'upcoming'">
+    ⏳ Upcoming
+  </template>
+
+  <template v-else>
+    ❌ Absent
+  </template>
+</span>
             </td>
             <td>{{ session.duration }}</td>
             <td>
@@ -109,10 +125,30 @@ const studentStats = computed(() =>
         : "⏳",
   }))
 );
+const getAttendanceStatus = (session) => {
+
+  // تاريخ اليوم 00:00
+  let today = new Date();
+  today.setHours(0,0,0,0);
+
+  // تاريخ السيشن
+  let sessionDate = new Date(session.date_time);
+
+  if (session.attendance === true) {
+    return "attended";
+  }
+
+  if (sessionDate > today) {
+    return "upcoming";
+  }
+
+  return "absent";
+};
 
 onMounted(async () => {
   group.value = await studentStore.fetchGroupById(groupId);
 });
+
 </script>
 
 <style scoped>

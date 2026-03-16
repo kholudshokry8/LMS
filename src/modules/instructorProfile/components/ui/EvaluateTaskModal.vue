@@ -65,7 +65,7 @@ await store.evaluateTask({
   taskId: taskId.value,
   student_id: submission.value.student_id,
   score: Number(score.value),
-  feedback: feedback.value
+instructor_note: feedback.value
 });
 
 // بعد التقييم حدث الجدول مباشرة:

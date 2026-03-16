@@ -26,10 +26,11 @@
               <span v-if="student.task_submission">✅</span>
               <span v-else>❌</span>
             </td>
-            <td>
-              <span v-if="student.attended">✅</span>
-              <span v-else>❌</span>
-            </td>
+           <td>
+  <span v-if="student.status === 'attended'">✅</span>
+  <span v-else-if="student.status === 'upcoming'">🕒</span>
+  <span v-else>❌</span>
+</td>
             <td class="d-flex gap-2">
               <button
                 class="btn btn-sm btn-primary"
@@ -43,13 +44,21 @@
               </button>
 
               <!-- زرار Evaluate -->
-              <button
+              <!-- <button
                 class="btn btn-sm btn-success"
                 @click="openEvaluateModal(student)"
                 :disabled="!student.task_submission || !session.task"
               >
                 Evaluate
-              </button>
+              </button> -->
+              <!-- زرار Evaluate -->
+<button
+  class="btn btn-sm btn-success"
+  @click="openEvaluateModal(student)"
+  :disabled="student.status !== 'attended' || !student.task_submission || !session.task"
+>
+  Evaluate
+</button>
             </td>
           </tr>
         </tbody>
@@ -107,21 +116,35 @@ const fetchStudents = async () => {
 
     const sessionData = group.sessions?.find(s => s.id === props.session.id);
 
-    students.value = (group.students || []).map(student => {
-      const attendance = sessionData?.attendances?.find(
-        a => Number(a.student_id) === Number(student.id)
-      );
-      const submission = submissions.find(
-        sub => Number(sub.student_id) === Number(student.id)
-      ) || null;
+students.value = (group.students || []).map(student => {
+  const attendance = sessionData?.attendances?.find(
+    a => Number(a.student_id) === Number(student.id)
+  );
 
-      return {
-        ...student,
-        task_submission: submission,
-        attended: attendance ? attendance.attended : false
-      };
-    });
+  const submission = submissions.find(
+    sub => Number(sub.student_id) === Number(student.id)
+  ) || null;
 
+  // 1. حساب الحالة (status)
+  let status = '';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const sessionDate = new Date(props.session.date);
+
+  if (!attendance || attendance.attended === false) {
+    status = sessionDate > today ? 'upcoming' : 'absent';
+  } else {
+    status = 'attended';
+  }
+
+  return {
+    ...student,
+    task_submission: submission,
+    attended: attendance ? attendance.attended : false,
+    status
+  };
+});
   } catch (err) {
     console.error("Failed to fetch students:", err);
     alert("Failed to fetch students");

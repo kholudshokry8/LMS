@@ -2,15 +2,36 @@
   <div class="task-container" v-if="task">
     <div class="card shadow-lg p-4 bg-white rounded">
       <h2 class="fw-bold text-primary mb-3">📝 Task: {{ task.title }}</h2>
-      <p class="text-muted mb-2"><strong>🗓️ Due Date:</strong> {{ task.due_date || 'N/A' }}</p>
-      <p class="mb-4"><strong>📄 Description:</strong> {{ task.description || 'No description provided.' }}</p>
 
-      <div v-if="task.submitted">
+      <p class="text-muted mb-2">
+        <strong>🗓️ Due Date:</strong> {{ task.due_date || 'N/A' }}
+      </p>
+
+      <p class="mb-4">
+        <strong>📄 Description:</strong>
+        {{ task.description || 'No description provided.' }}
+      </p>
+
+      <!-- لو الطالب مسلم التاسك -->
+      <div v-if="task.submission">
         <p class="alert alert-success">✅ You already submitted this task.</p>
-        <p><strong>Grade:</strong> {{ task.grade || 'Pending' }}</p>
+
+        <p>
+          <strong>📊 Grade:</strong>
+          {{ task.submission.grade || 'Pending' }}
+        </p>
+
+        <p v-if="task.submission.instructor_note">
+          <strong>💬 Instructor Note:</strong>
+          {{ task.submission.instructor_note }}
+        </p>
       </div>
+
+      <!-- لو الطالب لم يسلم -->
       <div v-else>
-        <button class="btn btn-fun" @click="showModal = true">🚀 Submit My Answer</button>
+        <button class="btn btn-fun" @click="showModal = true">
+          🚀 Submit My Answer
+        </button>
       </div>
     </div>
 
@@ -18,17 +39,19 @@
     <div v-if="showModal" class="modal fade show d-block" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content fun-modal p-4">
+
           <div class="modal-header">
             <h5 class="modal-title">✍️ Submit Your Answer</h5>
             <button type="button" class="btn-close" @click="closeModal"></button>
           </div>
 
           <!-- Alert -->
-          <div v-if="alertMessage" :class="`alert alert-${alertType}`" role="alert">
+          <div v-if="alertMessage" :class="`alert alert-${alertType}`">
             {{ alertMessage }}
           </div>
 
           <div class="modal-body">
+
             <div class="mb-3">
               <label class="form-label">📌 Title:</label>
               <input
@@ -48,21 +71,37 @@
                 placeholder="Write your awesome solution here ✨"
               ></textarea>
             </div>
+
           </div>
 
           <div class="modal-footer d-flex justify-content-between">
-            <button class="btn btn-fun-submit" @click="submitSolution">✅ Send</button>
-            <button class="btn btn-secondary" @click="closeModal">❌ Cancel</button>
+            <button class="btn btn-fun-submit" @click="submitSolution">
+              ✅ Send
+            </button>
+
+            <button class="btn btn-secondary" @click="closeModal">
+              ❌ Cancel
+            </button>
           </div>
+
         </div>
       </div>
     </div>
   </div>
 
-  <div v-else class="text-center mt-5">
-    <h4>⏳ Loading task details...</h4>
+<!-- Loading -->
+<div v-if="loading" class="text-center mt-5">
+  <h4>⏳ Loading task details...</h4>
+</div>
+
+<!-- No Task -->
+<div v-else-if="!task" class="text-center mt-5">
+  <div class="alert alert-info">
+    📌 No task has been assigned for this session yet.
   </div>
+</div>
 </template>
+
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
@@ -83,6 +122,7 @@ const alertType = ref("success");
 const showAlert = (message, type = "success") => {
   alertMessage.value = message;
   alertType.value = type;
+
   setTimeout(() => {
     alertMessage.value = "";
   }, 4000);
@@ -107,27 +147,43 @@ const closeModal = () => {
 };
 
 const submitSolution = async () => {
+
   if (!solutionTitle.value || !solutionText.value) {
     showAlert("❗ Please fill in both title and answer.", "warning");
     return;
   }
 
   try {
+
     await submitTask(task.value.id, {
       title: solutionTitle.value,
       answer: solutionText.value
     });
 
     showAlert("🎉 Task submitted successfully!", "success");
+
     closeModal();
-    task.value.submitted = true;
+
+    // تحديث الحالة بعد التسليم
+    task.value.submission = {
+      answer: solutionText.value,
+      grade: null,
+      instructor_note: null
+    };
+
   } catch (error) {
-    const errMsg = error.response?.data?.message || error.message || "Something went wrong.";
+
+    const errMsg =
+      error.response?.data?.message ||
+      error.message ||
+      "Something went wrong.";
+
     if ([401, 403].includes(error.response?.status)) {
       showAlert("🔐 Session expired. Please login again.", "danger");
     } else {
       showAlert("❌ " + errMsg, "danger");
     }
+
     console.error("❌ Error submitting task:", error);
   }
 };
@@ -149,12 +205,13 @@ const submitSolution = async () => {
   border-radius: 12px;
   transition: all 0.3s;
 }
+
 .btn-fun:hover {
   background-color: #019174;
 }
 
 .modal {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0,0,0,0.5);
   position: fixed;
   inset: 0;
   display: flex;
@@ -186,6 +243,7 @@ const submitSolution = async () => {
   border-radius: 10px;
   font-weight: bold;
 }
+
 .btn-fun-submit:hover {
   background-color: #4834d4;
 }
