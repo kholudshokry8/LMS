@@ -27,13 +27,13 @@ async createCategory(categoryData) {
 ,
 
 async updateCategory(id, formData) {
-  return await api.post(`/categories/${id}`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-}
 
+  // ✅ Laravel method spoofing
+  formData.append("_method", "PUT");
+
+  // ❌ لا تضيفي headers هنا
+  return await api.post(`/categories/${id}`, formData);
+}
 
 
 ,

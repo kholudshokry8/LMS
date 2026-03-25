@@ -371,7 +371,7 @@ const fetchCategories = async () => {
   try {
     const token = localStorage.getItem("token");
 
-    const res = await fetch("https://stemers-backend.coodex-academy.com/api/categories", {
+    const res = await fetch("https://back.stemershub.com/api/categories", {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json"

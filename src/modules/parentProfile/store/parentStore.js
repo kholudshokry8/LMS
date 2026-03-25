@@ -1,11 +1,8 @@
-// parentProfile/store/parentStore.js
-
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import * as api from '../services/parentService';
 
 export const useParentStore = defineStore('parent', () => {
-  // State
   const parent = ref(null);
   const children = ref([]);
   const child = ref(null);
@@ -15,24 +12,17 @@ export const useParentStore = defineStore('parent', () => {
   const feedbacks = ref([]);
   const loading = ref(true);
 
-  // Computed
   const childrenCount = computed(() => children.value.length);
 
-  // ----------------------------
-  // ✅ Fetch parent profile & children
-  // ----------------------------
   const fetchParentWithChildren = async () => {
     loading.value = true;
     try {
       const res = await api.getParentProfile();
-      console.log("🔥 RAW Response:", res);
-
       const parentData = res.data.data;
       const rawChildren = parentData.children || [];
 
       const processedChildren = rawChildren.map(child => {
         const firstGroup = child.student_groups?.[0];
-
         return {
           ...child,
           age: calculateAge(child.birth_date),
@@ -44,24 +34,17 @@ export const useParentStore = defineStore('parent', () => {
       parent.value = parentData;
       children.value = processedChildren;
 
-      console.log("✅ Processed Children:", children.value);
     } catch (e) {
       console.error("❌ Error fetching parent profile:", e);
-      throw e;
     } finally {
       loading.value = false;
     }
   };
 
-  // ----------------------------
-  // ✅ Fetch child details & their groups
-  // ----------------------------
   const fetchChildDetails = async (childId) => {
     loading.value = true;
     try {
       const res = await api.getChildDetails(childId);
-      console.log("🔍 Full API Response:", res);
-
       const childData = res.data.data;
       const evaluations = res.data.final_evaluation || [];
 
@@ -73,73 +56,57 @@ export const useParentStore = defineStore('parent', () => {
 
       groups.value = (childData.student_groups || []).map(group => {
         const evaluation = evaluations.find(e => e.group_id === group.id);
-
         return {
           id: group.id,
           name: group.name,
           course: group.course?.title || "No Course",
-          startDate: group.start_date || "N/A",
-          attendance: evaluation ? evaluation.attendance_percentage : 0,
-          tasks: evaluation ? evaluation.average_task_grade : 0
+          startDate: group.start_date,
+          attendance: evaluation?.attendance_percentage ?? 0,
+          tasks: calculateTaskSubmission(group.sessions)
         };
       });
 
-      console.log("✅ Processed Groups:", groups.value);
     } catch (e) {
-      console.error("❌ Error fetching child details:", {
-        error: e,
-        response: e.response?.data
-      });
+      console.error("❌ Error fetching child details:", e);
     } finally {
       loading.value = false;
     }
   };
 
-  // ----------------------------
-  // ✅ Fetch group details & feedbacks
-  // ----------------------------
-const fetchGroupDetails = async (childId, groupId) => {
-  loading.value = true;
-  try {
-    const data =await api.getChildGroupDetails(childId, groupId); // ✅ Fix here
-
-    console.log("🧾 Final loaded group data:", data);
-
-    groupDetails.value = {
-      name: data.group_name,
-      course: data.course_title,
-      instructor: data.instructor_name,
-      attendance: data.final_evaluation?.attendance_percentage ?? 0,
-      tasks: data.final_evaluation?.average_task_grade ?? 0
-    };
-
-    sessions.value = data.sessions || [];
-    feedbacks.value = data.feedbacks || [];
-
-    console.log("✅ Sessions inside store:", sessions.value);
-  } catch (e) {
-    console.error("❌ Error in fetchGroupDetails:", e);
-  } finally {
-    loading.value = false;
-  }
-};
-
-  // ----------------------------
-  // 🧮 Helpers
-  // ----------------------------
-  const calculateAge = (birthDate) => {
+  const fetchGroupDetails = async (childId, groupId) => {
+    loading.value = true;
     try {
-      if (!birthDate) return null;
-      const today = new Date();
-      const birth = new Date(birthDate);
-      let age = today.getFullYear() - birth.getFullYear();
-      const m = today.getMonth() - birth.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-      return age;
+      const data = await api.getChildGroupDetails(childId, groupId);
+
+      groupDetails.value = {
+        name: data.group_name,
+        course: data.course_title,
+        instructor: data.instructor_name,
+        attendance: data.final_evaluation?.attendance_percentage ?? 0,
+        tasks: calculateTaskPercentage(data.sessions)
+      };
+
+      sessions.value = data.sessions || [];
+      feedbacks.value = data.sessions
+        .filter(s => s.evaluation && s.evaluation.comment)
+        .map(s => s.evaluation);
+
     } catch (e) {
-      console.error("❌ Error calculating age:", e);
-      return null;
+      console.error("❌ Error in fetchGroupDetails:", e);
+    } finally {
+      loading.value = false;
     }
+  };
+
+  // Helpers
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
   };
 
   const calculateAttendance = (sessions) => {
@@ -148,30 +115,35 @@ const fetchGroupDetails = async (childId, groupId) => {
     return ((attended / sessions.length) * 100).toFixed(0);
   };
 
-  // ----------------------------
-  // Return
-  // ----------------------------
+  const calculateTaskSubmission = (sessions) => {
+    if (!Array.isArray(sessions) || sessions.length === 0) return 0;
+    const submitted = sessions.filter(s => s.task?.submitted).length;
+    return Math.round((submitted / sessions.length) * 100);
+  };
+
+  const calculateTaskPercentage = (sessions) => {
+    const tasks = sessions.filter(s => s.task !== null);
+    if (!tasks.length) return 0;
+    const submitted = tasks.filter(t => t.task.submitted).length;
+    return Math.round((submitted / tasks.length) * 100);
+  };
+
   return {
-    // State
     parent,
     children,
     child,
     groups,
     groupDetails,
-    feedbacks,
     sessions,
+    feedbacks,
     loading,
-
-    // Computed
     childrenCount,
-
-    // Actions
     fetchParentWithChildren,
     fetchChildDetails,
     fetchGroupDetails,
-
-    // Helpers
     calculateAge,
-    calculateAttendance
+    calculateAttendance,
+    calculateTaskSubmission,
+    calculateTaskPercentage
   };
 });

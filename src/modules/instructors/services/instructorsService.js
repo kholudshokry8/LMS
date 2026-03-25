@@ -22,10 +22,20 @@ export default {
   },
 
   // تحديث بيانات محاضر
-  async update(id, data) {
-    const response = await api.put(`/instructors/${id}`, data);
-    return response.data;
-  },
+// instructorsService.js
+
+async update(id, data) {
+  const response = await api.post(
+    `/instructors/${id}`,
+    data,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    }
+  );
+  return response.data;
+},
 
   // حذف محاضر
 async delete(id) {

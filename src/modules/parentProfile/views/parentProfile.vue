@@ -21,8 +21,10 @@
     </div>
 
     <!-- Children Section -->
-    <h2 class="text-center fw-bold text-primary mb-4">My Children</h2>
-
+    <!-- <h2 class="text-center fw-bold text-primary mb-4">My Children</h2> -->
+<h2 class="fw-bold text-primary mb-4">
+  Children Overview
+</h2>
     <div v-if="loading" class="text-center py-4">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
@@ -31,38 +33,60 @@
     </div>
 
     <div v-else>
-      <div v-if="hasChildren" class="row g-4">
-        <div v-for="child in children" :key="child.id" class="col-md-4">
-          <div class="card h-100 border-0 shadow-sm rounded-4 hover-effect">
-            <div class="card-body text-center">
-              <div class="child-avatar mx-auto mb-3">
-                <i class="bi bi-person-circle"></i>
-              </div>
-              <h5 class="fw-bold">{{ child.name }}</h5>
-              <div class="child-details">
-               <p class="text-muted mb-1" v-if="child.age">
-  <i class="bi bi-calendar me-1"></i> Age: {{ child.age }}
-</p>
-<p class="text-muted mb-1" v-if="child.course">
-  <i class="bi bi-book me-1"></i> Course: {{ child.course }}
-</p>
-<p class="text-muted mb-3" v-if="child.attendance">
-  <i class="bi bi-clipboard-check me-1"></i>
-  Attendance: {{ child.attendance }}
-</p>
+ <div v-if="hasChildren" class="row g-4">
 
-              </div>
-         <RouterLink
-  :to="`/parentProfile/${child.id}`"
-  class="btn btn-outline-primary btn-sm"
->
-  <i class="bi bi-eye me-1"></i> View Details
-</RouterLink>
+  <div
+    v-for="child in children"
+    :key="child.id"
+    class="col-lg-4 col-md-6"
+  >
+    <div class="card h-100 border-0 shadow-sm rounded-4 hover-effect">
 
-            </div>
-          </div>
+      <div class="card-body text-center">
+
+        <div class="child-avatar mx-auto mb-3">
+          <i class="bi bi-person-circle"></i>
         </div>
+
+        <h5 class="fw-bold">{{ child.name }}</h5>
+
+        <p class="text-muted small mb-3">
+          {{ child.email }}
+        </p>
+
+        <!-- Statistics -->
+        <div class="row text-center mb-3">
+
+          <div class="col">
+            <small class="text-muted d-block">Groups</small>
+            <strong>{{ child.student_groups?.length || 0 }}</strong>
+          </div>
+
+          <div class="col">
+            <small class="text-muted d-block">Sessions</small>
+            <strong>{{ countSessions(child) }}</strong>
+          </div>
+
+          <div class="col">
+            <small class="text-muted d-block">Attendance</small>
+            <strong>{{ attendancePercent(child) }}%</strong>
+          </div>
+
+        </div>
+
+        <RouterLink
+          :to="`/parentProfile/${child.id}`"
+          class="btn btn-outline-primary btn-sm"
+        >
+          <i class="bi bi-eye me-1"></i>
+          View Details
+        </RouterLink>
+
       </div>
+    </div>
+  </div>
+
+</div>
 
       <div v-else class="text-center py-5">
         <div class="empty-state">
@@ -94,7 +118,39 @@ const children = computed(() => store.children);
 const loading = computed(() => store.loading);
 
 const hasChildren = computed(() => children.value.length > 0);
+const countSessions = (child) => {
+  let total = 0
 
+  child.student_groups?.forEach(group => {
+    total += group.sessions?.length || 0
+  })
+
+  return total
+}
+
+const attendancePercent = (child) => {
+  let total = 0
+  let attended = 0
+
+  child.student_groups?.forEach(group => {
+    group.sessions?.forEach(session => {
+
+      const record = session.attendances?.find(
+        a => a.student_id === child.id
+      )
+
+      if (record) {
+        total++
+        if (record.attended) attended++
+      }
+
+    })
+  })
+
+  if (total === 0) return 0
+
+  return Math.round((attended / total) * 100)
+}
 onMounted(() => {
   
   console.log("✅ ParentProfile.vue is mounted");

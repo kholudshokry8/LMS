@@ -24,8 +24,8 @@
       <BaseTable
         :columns="['id','' ,'','name','']"
         :data="store.categories"
-        :actions="{  edit: true, delete: true }"
-        @edit="editCategory"
+        :actions="{  delete: true }"
+      
         @delete="deleteCategory"
         class="category-table"
       />

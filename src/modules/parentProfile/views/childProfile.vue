@@ -1,72 +1,95 @@
 <template>
-  <div class="container py-5">
-    <div v-if="loading" class="text-center">Loading...</div>
-    <div v-else>
-      <h3 class="mb-4">{{ child?.name }}'s Groups</h3>
+  <div class="container py-4">
 
-      <table class="table table-bordered" v-if="groups.length > 0">
-        <thead class="table-light">
-          <tr>
-            <th>#</th>
-            <th>Group</th>
-            <th>Course</th>
-            <th>Start Date</th>
-            <th>Attendance %</th>
-            <th>Tasks %</th>
-            <th>View</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(group, index) in groups" :key="group.id">
-            <td>{{ index + 1 }}</td>
-            <td>{{ group.name }}</td>
-            <td>{{ group.course }}</td>
-            <td>{{ group.startDate }}</td>
-            <td>{{ group.attendance }}</td>
-            <td>{{ group.tasks }}</td>
-            <td>
-              <router-link
-                :to="`/parentProfile/${child.id}/${group.id}`"
-                class="btn btn-sm btn-outline-info"
-              >
-                Details
-              </router-link>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Child Info -->
+    <div class="mb-4 border-bottom pb-3">
+      <h4 class="text-primary">
+        <i class="bi bi-person-circle me-2"></i>
+        Child Profile
+      </h4>
 
-      <div v-else class="text-center text-muted mt-4">
-        No groups found for this child.
-      </div>
+      <h5 class="mt-3">{{ child?.name }}</h5>
+      <p class="text-muted">{{ child?.email }}</p>
     </div>
+
+    <!-- Groups -->
+    <h5 class="text-primary mb-3">Groups</h5>
+
+    <div v-if="loading" class="text-center">
+      Loading...
+    </div>
+
+    <div v-else class="row">
+
+      <div
+       v-for="group in groups"
+        :key="group.id"
+        class="col-md-6 col-lg-4 mb-4"
+      >
+        <div class="card shadow-sm h-100">
+
+          <div class="card-body">
+
+            <p>
+              <strong>Group:</strong>
+              {{ group.name }}
+            </p>
+
+            <p>
+              <strong>Course:</strong>
+              {{ group.course }}
+            </p>
+
+            <p>
+              <strong>Attendance:</strong>
+              {{ group.attendance }}%
+            </p>
+
+            <p>
+              <strong>Tasks:</strong>
+              {{ group.tasks }}%
+            </p>
+
+            <router-link
+              :to="`/parentProfile/${child.id}/${group.id}`"
+              class="btn btn-outline-primary btn-sm"
+            >
+              <i class="bi bi-eye me-1"></i>
+              View Details
+            </router-link>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div v-if="!groups.length" class="text-center text-muted mt-4">
+      No groups found for this child.
+    </div>
+
   </div>
 </template>
-
 <script setup>
-import { onMounted, watch } from "vue";
-import { useRoute } from "vue-router";
-import { useParentStore } from "../store/parentStore";
-import { storeToRefs } from "pinia";
+import { onMounted, watch } from "vue"
+import { useRoute } from "vue-router"
+import { useParentStore } from "../store/parentStore"
+import { storeToRefs } from "pinia"
 
-const store = useParentStore();
-const route = useRoute();
+const route = useRoute()
+const store = useParentStore()
 
-// ✅ make reactive references
-const { loading, child, groups, groupDetails } = storeToRefs(store);
+const { loading, child, groups } = storeToRefs(store)
 
-// ✅ Fetch data on mount
 onMounted(async () => {
-  console.log("📦 Loading child details:", route.params.childId);
-  await store.fetchChildDetails(route.params.childId);
-});
+  await store.fetchChildDetails(route.params.childId)
+})
 
-// ✅ Refetch if childId changes
 watch(
   () => route.params.childId,
-  async (newId) => {
-    console.log("📦 Watching route param:", newId);
-    await store.fetchChildDetails(newId);
+  async (id) => {
+    await store.fetchChildDetails(id)
   }
-);
+)
 </script>

@@ -1,33 +1,75 @@
 <template>
   <div class="mt-2">
+    <!-- Header -->
     <div
-      class="d-flex flex-row justify-content-between align-items-center flex-wrap"
+      class="d-flex flex-row justify-content-between align-items-center flex-wrap mb-3 gap-2"
     >
       <div class="title">
         <h1>Group List</h1>
       </div>
-      <div class="buttons d-flex flex-row gap-2">
+
+      <div class="d-flex gap-2 flex-wrap">
+        <!-- Search -->
+        <input
+          v-model="search"
+          type="text"
+          class="form-control"
+          placeholder="Search groups..."
+          style="width: 250px"
+        />
+
+        <!-- Create Button -->
         <button type="button" class="btn btn-primary" @click="goToCreate">
           Create
         </button>
       </div>
     </div>
+
+    <!-- Loading -->
     <BaseLoading v-if="store.loading" />
+
+    <!-- Table -->
     <div v-else>
       <BaseTable
         :columns="['name', 'course', 'date', 'days', 'studentsCount']"
-        :data="store.Groups"
+        :data="paginatedGroups"
         :actions="{ show: true, edit: true, delete: true }"
         @show="showGroup"
         @edit="editGroup"
         @delete="deleteGroup"
       />
+
+      <!-- Pagination -->
+      <div
+        class="d-flex justify-content-center align-items-center mt-4"
+        v-if="totalPages > 1"
+      >
+        <button
+          class="btn btn-outline-primary mx-1"
+          :disabled="page === 1"
+          @click="page--"
+        >
+          Prev
+        </button>
+
+        <span class="mx-2">
+          Page {{ page }} of {{ totalPages }}
+        </span>
+
+        <button
+          class="btn btn-outline-primary mx-1"
+          :disabled="page === totalPages"
+          @click="page++"
+        >
+          Next
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { onMounted, ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useGroupsStore } from "../store/GroupsStore";
 import BaseTable from "@/components/base/BaseTable.vue";
@@ -36,11 +78,21 @@ import BaseLoading from "@/components/base/BaseLoading.vue";
 const router = useRouter();
 const store = useGroupsStore();
 
+// =====================
+// State
+// =====================
+const search = ref("");
+const page = ref(1);
+const perPage = 20;
+
+// =====================
+// Navigation
+// =====================
 const showGroup = (group) => {
   router.push({ name: "GroupDetails", params: { id: group.original.id } });
 };
+
 const editGroup = (group) => {
-  // لو الـ id موجود جوه group.original.id
   const groupId = group.id || group.original?.id;
 
   if (groupId) {
@@ -51,20 +103,47 @@ const editGroup = (group) => {
 };
 
 const deleteGroup = (group) => {
-  if (confirm(`Are you sure you want to delete ${group.Name}?`)) {
-    console.log("Deleting course:", group);
+  if (confirm(`Are you sure you want to delete ${group.name}?`)) {
     store.deleteGroup(group.original.id);
   }
 };
 
 const goToCreate = () => {
-  router.push({ name: "CreateGroup" }); // التنقل إلى صفحة الإنشاء
+  router.push({ name: "CreateGroup" });
 };
 
-const goToEdit = () => {
-  router.push({ name: "EditGroup" }); // التنقل إلى صفحة التعديل
-};
+// =====================
+// Computed
+// =====================
 
+// Search Filter
+const filteredGroups = computed(() => {
+  if (!search.value) return store.Groups;
+
+  return store.Groups.filter((group) =>
+    group.name?.toLowerCase().includes(search.value.toLowerCase())
+  );
+});
+
+// Total Pages
+const totalPages = computed(() => {
+  return Math.ceil(filteredGroups.value.length / perPage) || 1;
+});
+
+// Paginated Data
+const paginatedGroups = computed(() => {
+  const start = (page.value - 1) * perPage;
+  return filteredGroups.value.slice(start, start + perPage);
+});
+
+// Reset page when search changes
+watch(search, () => {
+  page.value = 1;
+});
+
+// =====================
+// Lifecycle
+// =====================
 onMounted(() => {
   store.fetchGroups();
 });

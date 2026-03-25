@@ -7,7 +7,7 @@
       <h2 class="mb-2">{{ sessionData.title }}</h2>
       <p><strong>Date:</strong> {{ sessionData.date }}</p>
       <p><strong>Start Time:</strong> {{ sessionData.start_time }}</p>
-      <p><strong>Location:</strong> {{ sessionData.location }}</p>
+      <!-- <p><strong>Location:</strong> {{ sessionData.location }}</p> -->
     </div>
 
     <!-- جدول الطلاب -->

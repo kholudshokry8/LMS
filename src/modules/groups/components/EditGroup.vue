@@ -47,13 +47,15 @@
         <label class="form-label">Days</label>
         <input
           type="text"
-          :value="group.days"
+          :value="formattedDays"
           class="form-control"
           disabled
         />
       </div>
 
-      <button type="submit" class="btn btn-success">Save Changes</button>
+      <button type="submit" class="btn btn-success">
+        Save Changes
+      </button>
     </form>
 
     <BaseLoading v-else />
@@ -61,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/axios";
 import BaseLoading from "@/components/base/BaseLoading.vue";
@@ -72,6 +74,9 @@ const router = useRouter();
 const group = ref(null);
 const groupId = route.params.id;
 
+// =====================
+// Load Data
+// =====================
 onMounted(async () => {
   try {
     const response = await api.get(`/groups/${groupId}`);
@@ -81,11 +86,37 @@ onMounted(async () => {
   }
 });
 
+// =====================
+// Computed
+// =====================
+const formattedDays = computed(() => {
+  try {
+    return group.value?.days
+      ? JSON.parse(group.value.days).join(", ")
+      : "Not Set";
+  } catch {
+    return "Not Set";
+  }
+});
+
+// =====================
+// Submit
+// =====================
 const submitForm = async () => {
   try {
     await api.put(`/groups/${groupId}`, {
       name: group.value.name,
       max_students: group.value.max_students,
+
+      // 👇 required fields
+      course_id: group.value.course_id,
+      start_date: group.value.start_date,
+      end_date: group.value.end_date,
+      start_time: group.value.start_time,
+      end_time: group.value.end_time,
+
+      // 👇 تحويل days لـ array
+      days: JSON.parse(group.value.days),
     });
 
     alert("Group updated successfully");

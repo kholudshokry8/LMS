@@ -31,15 +31,15 @@
               </div>
 
               <!-- ✅ معاينة الصورة الجديدة أو الحالية -->
-              <div class="col-md-12 mb-3" v-if="imagePreview || currentImage">
-                <label class="form-label">Preview</label>
-                <img
-                  :src="imagePreview || currentImageUrl"
-                  alt="Preview"
-                  class="img-thumbnail"
-                  style="max-width: 200px;"
-                />
-              </div>
+          <div class="col-md-12 mb-3" v-if="imagePreview">
+  <label class="form-label">Preview</label>
+  <img
+    :src="imagePreview"
+    alt="Preview"
+    class="img-thumbnail"
+    style="max-width: 200px;"
+  />
+</div>
 
               <div class="col-12">
                 <button type="submit" class="btn btn-primary w-100">Save Changes</button>
@@ -64,15 +64,26 @@ const courseName = ref("");
 const imageFile = ref(null);
 const imagePreview = ref("");
 
-onMounted(() => {
-  const course = store.categories.find((c) => c.id == route.params.id);
+onMounted(async () => {
+
+  if (!store.categories.length) {
+    await store.fetchCategories();
+  }
+
+  const course = store.categories.find(
+    (c) => c.id == route.params.id
+  );
+
   if (course) {
     courseName.value = course.name;
-    imagePreview.value = import.meta.env.VITE_API_URL + "/" + course.image;
+    imagePreview.value =
+      import.meta.env.VITE_API_URL + "/" + course.image;
+
   } else {
     alert("❌ Category not found");
     router.push({ name: "CategoriesPage" });
   }
+
 });
 
 const handleImage = (e) => {
@@ -85,24 +96,24 @@ const handleImage = (e) => {
 
 const updateCourse = async () => {
   const formData = new FormData();
+
   formData.append("name", courseName.value);
-  formData.append("body", courseDetails.value || "");
-  // احذف السطر ده:
-  // formData.append("_method", "PUT");
+
   if (imageFile.value) {
     formData.append("image", imageFile.value);
   }
 
   try {
     await store.updateCategory(route.params.id, formData);
+
     alert("✅ Category updated successfully!");
     router.push({ name: "CategoriesPage" });
+
   } catch (err) {
     console.error("❌ Error updating category:", err);
     alert("❌ Failed to update category");
   }
 };
-
 </script>
 
 

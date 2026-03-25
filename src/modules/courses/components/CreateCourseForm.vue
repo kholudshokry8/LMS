@@ -240,7 +240,7 @@ onMounted(async () => {
   try {
     const token = localStorage.getItem("token");
 
-    const response = await axios.get("https://stemers-backend.coodex-academy.com/api/categories", {
+    const response = await axios.get("https://back.stemershub.com/api/categories", {
       headers: {
         Authorization: `Bearer ${token}`,
       },

@@ -5,47 +5,31 @@
       <div class="text-center mb-5">
         <h2 class="mb-4 text-primary fw-bold">{{ course.title }}</h2>
         <div class="image-box mx-auto border rounded overflow-hidden shadow-sm">
-          <img :src="`${course.image}`" alt="Course Image" class="img-fluid" />
-        </div>
-        <div class="mt-3 w-100 d-flex justify-content-center">
-          <a
-            v-if="course.youtube_video"
-            :href="course.youtube_video"
-            class="btn btn-danger"
-            target="_blank"
-          >
-            ▶ Watch on YouTube
-          </a>
+          <img :src="course.image" alt="Course Image" class="img-fluid" />
         </div>
       </div>
 
       <!-- المعلومات في عمودين -->
       <div class="row gx-5">
         <!-- العمود الأول -->
-      
-
-        <!-- العمود الثاني -->
         <div class="col-md-6 mb-4">
           <div v-if="course.requirements?.length">
             <h5 class="fw-semibold">Requirements:</h5>
             <ul class="list-unstyled ps-3">
-              <li v-for="(req, index) in course.requirements" :key="index" class="text-muted">• {{ req.requirement }}</li>
+              <li v-for="(req, index) in course.requirements" :key="index" class="text-muted">
+                • {{ req.requirement }}
+              </li>
             </ul>
           </div>
 
- <div v-if="course.learning?.length" class="mt-4">
-  <h5 class="fw-semibold">What You'll Learn:</h5>
-  <ul class="list-unstyled ps-3">
-    <li
-      v-for="(item, index) in course.learning"
-      :key="index"
-      class="text-muted"
-    >
-      ✔ {{ typeof item === 'object' ? item.title : item }}
-    </li>
-  </ul>
-</div>
-
+          <div v-if="course.learning?.length" class="mt-4">
+            <h5 class="fw-semibold">What You'll Learn:</h5>
+            <ul class="list-unstyled ps-3">
+              <li v-for="(item, index) in course.learning" :key="index" class="text-muted">
+                ✔ {{ typeof item === 'object' ? item.title : item }}
+              </li>
+            </ul>
+          </div>
 
           <div v-if="course.curriculum?.length" class="mt-4">
             <h5 class="fw-semibold">Curriculum:</h5>
@@ -61,13 +45,13 @@
             </ul>
           </div>
         </div>
-          <div class="col-md-6 mb-4">
-        
 
+        <!-- العمود الثاني -->
+        <div class="col-md-6 mb-4">
           <div class="details fs-5">
-            <p><strong>Category:</strong> {{ course.category?.name || 'N/A' }}</p>
+            <p><strong>Category:</strong> {{ category?.name || 'N/A' }}</p>
             <p><strong>Language:</strong> {{ course.language || 'N/A' }}</p>
-            <p><strong>Level:</strong> {{ course.level?.join(', ') || 'N/A' }}</p>
+            <p><strong>Level:</strong> {{ course.levels?.map(l => l.name).join(', ') || 'N/A' }}</p>
             <p><strong>Duration:</strong> {{ course.duration }} hr</p>
             <p><strong>Price:</strong> {{ course.price }} USD</p>
             <p><strong>Rating:</strong> {{ course.rating }}</p>
@@ -82,7 +66,9 @@
           <div v-if="course.who_is_for?.length" class="mt-4">
             <h5 class="fw-semibold">Who is this course for?</h5>
             <ul class="list-unstyled ps-3">
-              <li v-for="(target, index) in course.who_is_for" :key="index" class="text-muted">👤 {{ target }}</li>
+              <li v-for="(target, index) in course.who_is_for" :key="index" class="text-muted">
+                👤 {{ target }}
+              </li>
             </ul>
           </div>
         </div>
@@ -94,6 +80,47 @@
     </p>
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useCoursesStore } from '../store/coursesStore';
+
+const route = useRoute();
+const store = useCoursesStore();
+const course = ref(null);
+const loading = ref(false);
+const errorMessage = ref("");
+
+// عند تحميل الصفحة
+onMounted(async () => {
+  const courseId = route.params.id;
+
+  try {
+    loading.value = true;
+
+    // جلب الكاتيجوريز أولاً لو فاضية
+    if (!store.categories.length) {
+      await store.fetchCategories();
+    }
+
+    // جلب الكورس
+    await store.fetchCourse(courseId);
+    course.value = store.course;
+  } catch (error) {
+    errorMessage.value = "Failed to load course data.";
+    console.error(error);
+  } finally {
+    loading.value = false;
+  }
+});
+
+// computed للكاتيجوري
+const category = computed(() => {
+  if (!course.value || !store.categories.length) return null;
+  return store.categories.find(c => c.id === course.value.category_id) || null;
+});
+</script>
 
 <style scoped>
 .course-details {
@@ -122,39 +149,3 @@ ul li {
   margin-bottom: 0.4rem;
 }
 </style>
-
-
-
-
-
-
-<script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { useCoursesStore } from '../store/coursesStore';
-
-const route = useRoute();
-const store = useCoursesStore();
-const course = ref(null);
-const loading = ref(false);
-const errorMessage = ref("");
-
-// عند تحميل الصفحة
-onMounted(async () => {
-  const courseId = route.params.id;
-
-  try {
-    loading.value = true;
-    // استدعاء الدالة من الـ store لجلب بيانات الكورس
-    await store.fetchCourse(courseId);
-
-    // تعيين الكورس في المتغير المحلي
-    course.value = store.course; // نفترض أنك خزنت الـ course المفرد في store.course
-  } catch (error) {
-    errorMessage.value = "Failed to load course data.";
-    console.error(error);
-  } finally {
-    loading.value = false;
-  }
-});
-</script>
