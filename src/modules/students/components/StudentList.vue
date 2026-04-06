@@ -1,60 +1,49 @@
 <template>
   <div class="student-list">
-    <div class="header">
+    <div class="header d-flex justify-content-between mb-3">
       <h1>Student List</h1>
-      <!-- <router-link to="/students/form" class="btn btn-danger"><h4>Create</h4></router-link> -->
     </div>
 
     <BaseLoading v-if="loading" />
-
     <div v-else-if="error" class="text-red-600">{{ error }}</div>
 
     <div v-else>
-      <BaseTable
-        :columns="columns"
-        :data="students"
-        :key="students.length"
-        :actions="{ show: true, edit: true, delete: true }"
-        @edit="editStudent"
-
-        @delete="deleteStudentHandler"
-
-      />
+      <BaseTable :columns="['id','name','gender','phone','city','course','group','age','actions']" :data="students">
+        <template #actions="{ row }">
+          <button class="btn btn-sm btn-info me-1" @click="viewStudent(row)">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="btn btn-sm btn-primary me-1" @click="editStudent(row)">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" @click="deleteStudent(row)">
+            <i class="bi bi-trash"></i>
+          </button>
+        </template>
+      </BaseTable>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import BaseTable from '../../../components/base/BaseTable.vue';
-import BaseLoading from '../../../components/base/BaseLoading.vue';
-import { useStudentsStore } from '../store/studentStore'; 
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useStudentsStore } from "../store/studentStore";
+import BaseTable from "@/components/base/BaseTable.vue";
+import BaseLoading from "@/components/base/BaseLoading.vue";
+
 const router = useRouter();
 const store = useStudentsStore();
+const { students, loading, error } = store;
 
-const { students, loading, error, fetchStudents, deleteStudent } = store;
+onMounted(() => store.fetchStudents());
 
-const columns = ['id', 'name', 'gender', 'phone', 'city', 'course','group', 'age']; 
-
-
-
-onMounted(() => {
-
-  store.fetchStudents();
-
-});
-
-const editStudent = (student) => {
-  router.push(`/students/form/${student.id}`);
-};
-
-const deleteStudentHandler = async (row) => {
-  const confirmed = confirm(`Are you sure you want to delete ${row.name}?`);
-  if (confirmed) {
-
-    await store.deleteStudent(student.id);
-
+const viewStudent = (row) => router.push(`/students/${row.id}`);
+const editStudent = (row) => router.push(`/students/form/${row.id}`);
+const deleteStudent = async (row) => {
+  if (confirm(`Are you sure you want to delete "${row.name}"?`)) {
+    await store.deleteStudent(row.id);
+    await store.fetchStudents();
   }
 };
 </script>

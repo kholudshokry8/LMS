@@ -31,13 +31,33 @@
     <!-- Table -->
     <div v-else>
       <BaseTable
-        :columns="['name', 'course', 'date', 'days', 'studentsCount']"
+        :columns="['name', 'course', 'date', 'days', 'studentsCount', 'actions']"
         :data="paginatedGroups"
-        :actions="{ show: true, edit: true, delete: true }"
-        @show="showGroup"
-        @edit="editGroup"
-        @delete="deleteGroup"
-      />
+      >
+        <!-- ✅ Actions -->
+        <template #actions="{ row }">
+          <button
+            class="btn btn-sm btn-info me-1"
+            @click="showGroup(row)"
+          >
+            <i class="bi bi-eye"></i>
+          </button>
+
+          <button
+            class="btn btn-sm btn-primary me-1"
+            @click="editGroup(row)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+
+          <button
+            class="btn btn-sm btn-danger"
+            @click="deleteGroup(row)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </template>
+      </BaseTable>
 
       <!-- Pagination -->
       <div
@@ -89,22 +109,25 @@ const perPage = 20;
 // Navigation
 // =====================
 const showGroup = (group) => {
-  router.push({ name: "GroupDetails", params: { id: group.original.id } });
+  router.push({ name: "GroupDetails", params: { id: group.id } });
 };
 
 const editGroup = (group) => {
-  const groupId = group.id || group.original?.id;
-
-  if (groupId) {
-    router.push({ name: "EditGroup", params: { id: groupId } });
+  if (group.id) {
+    router.push({ name: "EditGroup", params: { id: group.id } });
   } else {
     console.warn("Group ID not found");
   }
 };
 
-const deleteGroup = (group) => {
-  if (confirm(`Are you sure you want to delete ${group.name}?`)) {
-    store.deleteGroup(group.original.id);
+const deleteGroup = async (group) => {
+  if (!confirm(`Are you sure you want to delete ${group.name}?`)) return;
+
+  try {
+    await store.deleteGroup(group.id);
+    await store.fetchGroups(); // 🔥 تحديث البيانات بعد الحذف
+  } catch (error) {
+    console.error("Delete error:", error);
   }
 };
 
@@ -116,7 +139,7 @@ const goToCreate = () => {
 // Computed
 // =====================
 
-// Search Filter
+// Search
 const filteredGroups = computed(() => {
   if (!search.value) return store.Groups;
 
@@ -130,13 +153,13 @@ const totalPages = computed(() => {
   return Math.ceil(filteredGroups.value.length / perPage) || 1;
 });
 
-// Paginated Data
+// Pagination
 const paginatedGroups = computed(() => {
   const start = (page.value - 1) * perPage;
   return filteredGroups.value.slice(start, start + perPage);
 });
 
-// Reset page when search changes
+// Reset page on search
 watch(search, () => {
   page.value = 1;
 });

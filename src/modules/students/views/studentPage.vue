@@ -1,34 +1,62 @@
 <template>
   <div class="container mt-5 pt-3">
-    <!-- <h1 class="heading-custom">All Students</h1> -->
 
+    <!-- Header -->
     <div class="header-and-button">
       <h2>Student List</h2>
-      <!-- <router-link to="/students/form" class="btn btn-success custom-button-add btn-lg">
-        <i class="bi bi-plus-circle-fill"></i> Create
-      </router-link> -->
+
       <router-link
-  to="/students/form"
-  class="btn btn-success d-flex align-items-center gap-2"
->
-  <i class="bi bi-plus-lg"></i>
-  Create
-</router-link>
-
+        to="/students/form"
+        class="btn btn-success d-flex align-items-center gap-2"
+      >
+        <i class="bi bi-plus-lg"></i>
+        Create
+      </router-link>
     </div>
 
-    <div v-if="loading" class="text-center text-primary">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <!-- 🔍 Search -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="form-control"
+          placeholder="Search student by name or phone..."
+        />
+
       </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="text-center text-primary">
+
+      <div class="spinner-border"></div>
+
       <p>Loading students…</p>
+
     </div>
-    <div v-else-if="error" class="alert alert-danger text-center">
+
+    <!-- Error -->
+    <div
+      v-else-if="error"
+      class="alert alert-danger text-center"
+    >
+
       <p>{{ error }}</p>
-      <button @click="fetchStudents" class="btn btn-warning mt-2">Retry Loading</button>
+
+      <button
+        @click="loadStudents"
+        class="btn btn-warning mt-2"
+      >
+        Retry Loading
+      </button>
+
     </div>
-    
+
+    <!-- Table -->
     <div v-else>
+
       <BaseTable 
         :columns="columns"
         :data="students"
@@ -37,28 +65,116 @@
         @delete="handleDelete"
         @show="handleShow"
       />
+
+      <!-- 📄 Pagination -->
+      <nav
+        v-if="totalPages > 1"
+        class="d-flex justify-content-center mt-4"
+      >
+
+        <ul class="pagination">
+
+          <!-- Previous -->
+
+          <li
+            class="page-item"
+            :class="{ disabled: currentPage === 1 }"
+          >
+
+            <button
+              class="page-link"
+              @click="changePage(currentPage - 1)"
+            >
+              Previous
+            </button>
+
+          </li>
+
+          <!-- Page Numbers -->
+
+          <li
+            v-for="page in visiblePages"
+            :key="page"
+            class="page-item"
+            :class="{ active: page === currentPage }"
+          >
+
+            <button
+              class="page-link"
+              @click="changePage(page)"
+            >
+              {{ page }}
+            </button>
+
+          </li>
+
+          <!-- Next -->
+
+          <li
+            class="page-item"
+            :class="{ disabled: currentPage === totalPages }"
+          >
+
+            <button
+              class="page-link"
+              @click="changePage(currentPage + 1)"
+            >
+              Next
+            </button>
+
+          </li>
+
+        </ul>
+
+      </nav>
+
     </div>
 
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useStudentsStore } from '../store/studentStore.js';
-import { storeToRefs } from 'pinia';
-import BaseTable from '@/components/base/BaseTable.vue'; 
 
+import {
+  onMounted,
+  ref,
+  computed,
+  watch
+} from 'vue';
+
+import { useRouter } from 'vue-router';
+
+import {
+  useStudentsStore
+} from '../store/studentStore.js';
+
+import { storeToRefs } from 'pinia';
+
+import BaseTable from '@/components/base/BaseTable.vue'; 
 
 const router = useRouter();
 
 const studentsStore = useStudentsStore();
 
+const {
+  students,
+  loading,
+  error
+} = storeToRefs(studentsStore);
 
-const { students, loading, error } = storeToRefs(studentsStore);
-const { fetchStudents, deleteStudent } = studentsStore; 
+const {
+  fetchStudents,
+  deleteStudent
+} = studentsStore;
 
-const columns = ref(['id', 'name', 'phone', 'course']);
+/* Table */
+
+const columns = ref([
+  'id',
+  'name',
+  'phone',
+  'course'
+]);
 
 const actions = ref({
   show: true,
@@ -66,81 +182,199 @@ const actions = ref({
   delete: true,
 });
 
+/* 🔍 Search */
+
+const searchQuery = ref('');
+
+/* 📄 Pagination */
+
+const currentPage = ref(1);
+
+const perPage = 20;
+
+const totalPages = ref(1);
+
+/* Load Students */
+
 const loadStudents = async () => {
-  await fetchStudents();
+
+const params = {
+
+  page: currentPage.value,
+
+  per_page: perPage,
+
+  query: searchQuery.value
+
 };
 
+  const response =
+    await fetchStudents(params);
 
-onMounted(() => {
-  loadStudents();
+  /* ✅ هنا التعديل الحقيقي */
+
+  if (response?.pagination) {
+
+    totalPages.value =
+      response.pagination.last_page;
+
+  }
+
+};
+
+/* 🔍 Debounced Search */
+
+let timeout = null;
+
+watch(searchQuery, () => {
+
+  clearTimeout(timeout);
+
+  timeout = setTimeout(() => {
+
+    currentPage.value = 1;
+
+    loadStudents();
+
+  }, 500);
+
 });
 
+/* 📄 Smart Pagination */
+
+const visiblePages = computed(() => {
+
+  const pages = [];
+
+  let start =
+    Math.max(
+      currentPage.value - 2,
+      1
+    );
+
+  let end =
+    Math.min(
+      start + 4,
+      totalPages.value
+    );
+
+  for (
+    let i = start;
+    i <= end;
+    i++
+  ) {
+
+    pages.push(i);
+
+  }
+
+  return pages;
+
+});
+
+/* Change Page */
+
+const changePage = async (page) => {
+
+  if (
+    page < 1 ||
+    page > totalPages.value
+  ) return;
+
+  currentPage.value = page;
+
+  await loadStudents();
+
+};
+
+/* Actions */
+
 const handleEdit = (student) => {
-  router.push(`/students/form/${student.id}`);
+
+  router.push(
+    `/students/form/${student.id}`
+  );
+
 };
 
 const handleDelete = async (student) => {
-  if (confirm(`Are you sure you want to delete student ${student.name}?`)) {
+
+  if (
+    confirm(
+      `Are you sure you want to delete student ${student.name}?`
+    )
+  ) {
+
     await deleteStudent(student.id);
+
     await loadStudents();
+
   }
+
 };
 
 const handleShow = (student) => {
-  router.push(`/students/${student.id}`);
+
+  router.push(
+    `/students/${student.id}`
+  );
+
 };
+
+/* Mounted */
+
+onMounted(() => {
+
+  loadStudents();
+
+});
+
 </script>
 
 <style scoped>
+
 .container {
   max-width: 1200px; 
 }
 
-.heading-custom {
-  color: #D65622;
-  margin-bottom: 10px; 
-  text-align: left;
-  font-weight: bolder;
-  font-size: 40px;
-}
-
 .header-and-button {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   margin-bottom: 20px;
+
 }
 
 h2 {
+
   color: #D65622;
+
   margin: 0;
-  text-align: left;
+
   font-weight: bolder;
+
   font-size: 35px;
+
 }
 
-.custom-button-add {
-  background-color: #d6031f; 
-  border-color: #d6031f;
-  font-size: 18px;
-  padding: 10px 25px;
-  border-radius: 8px; 
-  white-space: nowrap;
+/* Pagination */
+
+.pagination .page-link {
+
+  cursor: pointer;
+
 }
 
-.loading-text {
-  margin-top: 15px;
-  font-size: 1.2rem;
-  color: #D65622;
+.pagination .active .page-link {
+
+  background-color: #D65622;
+
+  border-color: #D65622;
+
 }
 
-.error-message {
-  margin-top: 20px;
-  padding: 20px;
-  font-size: 1.1rem;
-  color: #721c24; 
-  background-color: #f8d7da; 
-  border-color: #f5c6cb;
-  border-radius: 8px;
-}
 </style>

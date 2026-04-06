@@ -4,34 +4,56 @@
       <div class="title">
         <h1>Instructor List</h1>
       </div>
-      <div class="buttons d-flex flex-row gap-2">
-      <button
-  type="button"
-  class="btn btn-success d-flex align-items-center gap-2"
-  @click="goToCreateInstructor"
->
-  <i class="bi bi-plus-lg"></i>
-  Create
-</button>
 
+      <div class="buttons d-flex flex-row gap-2">
+        <button
+          type="button"
+          class="btn btn-success d-flex align-items-center gap-2"
+          @click="goToCreateInstructor"
+        >
+          <i class="bi bi-plus-lg"></i>
+          Create
+        </button>
       </div>
     </div>
 
     <BaseLoading v-if="store.loading" />
 
     <div v-else>
-      <div v-if="alertMessage" class="alert" :class="`alert-${alertType}`" role="alert">
+      <!-- Alert -->
+      <div v-if="alertMessage" class="alert" :class="`alert-${alertType}`">
         {{ alertMessage }}
       </div>
 
+      <!-- Table -->
       <BaseTable
-        :columns="['name', 'email', 'phone', 'specialization', 'linkedin']"
+        :columns="['name', 'email', 'phone', 'specialization', 'linkedin', 'actions']"
         :data="preparedInstructors"
-        :actions="{ show: true, edit: true, delete: true }"
-        @show="showInstructor"
-        @edit="editInstructor"
-        @delete="deleteInstructor"
-      />
+      >
+        <!-- ✅ Actions Slot -->
+        <template #actions="{ row }">
+          <button
+            class="btn btn-sm btn-info me-1"
+            @click="viewInstructor(row)"
+          >
+            <i class="bi bi-eye"></i>
+          </button>
+
+          <button
+            class="btn btn-sm btn-primary me-1"
+            @click="editInstructor(row)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+
+          <button
+            class="btn btn-sm btn-danger"
+            @click="deleteInstructor(row)"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </template>
+      </BaseTable>
     </div>
   </div>
 </template>
@@ -60,55 +82,67 @@ const showAlert = (message, type = "success", duration = 3000) => {
   }, duration);
 };
 
-// ✅ إعداد البيانات لتظهر في الجدول بشكل مباشر
+// ✅ تجهيز البيانات للعرض
 const preparedInstructors = computed(() => {
   return store.instructors.map((inst) => ({
     id: inst.id,
     name: inst.name,
     email: inst.email,
     phone: inst.phone,
-    specialization: inst.instructor?.specialization || 'N/A',
+    specialization: inst.instructor?.specialization || "N/A",
     linkedin: inst.instructor?.linkedin
       ? `<a href="${inst.instructor.linkedin}" target="_blank">LinkedIn</a>`
-      : 'N/A',
+      : "N/A",
   }));
 });
 
-const showInstructor = (instructor) => {
+// ✅ Actions
+const viewInstructor = (instructor) => {
   router.push(`/instructors/${instructor.id}`);
 };
 
 const editInstructor = (instructor) => {
   router.push(`/edit-instructor/${instructor.id}`);
 };
+
 const deleteInstructor = async (instructor) => {
   if (!confirm(`Are you sure you want to delete ${instructor.name}?`)) return;
 
   try {
     await store.deleteInstructor(instructor.id);
-
-    // ✅ بنعمل refetch بعد نجاح فعلي
     await store.fetchInstructors();
 
-    showAlert(`Instructor ${instructor.name} has been deleted successfully.`, "success");
-
+    showAlert(
+      `Instructor ${instructor.name} has been deleted successfully.`,
+      "success"
+    );
   } catch (error) {
-    // ✅ لو فيه رد من السيرفر
     if (error.response) {
       const status = error.response.status;
-      console.log("❗ error.response:", error.response);
-
 
       if (status === 404) {
-        showAlert("❌ Instructor not found. It may have already been deleted.", "danger");
+        showAlert(
+          "❌ Instructor not found. It may have already been deleted.",
+          "danger"
+        );
       } else if (status === 403) {
-        showAlert("🚫 You are not authorized to delete this instructor.", "danger");
+        showAlert(
+          "🚫 You are not authorized to delete this instructor.",
+          "danger"
+        );
       } else if (status === 422) {
-        showAlert(`❗ Validation error: ${error.response.data?.message}`, "danger");
+        showAlert(
+          `❗ Validation error: ${error.response.data?.message}`,
+          "danger"
+        );
       } else {
-        showAlert(`⚠️ Server error: ${error.response.data?.message || "Unexpected error."}`, "danger");
+        showAlert(
+          `⚠️ Server error: ${
+            error.response.data?.message || "Unexpected error."
+          }`,
+          "danger"
+        );
       }
-
     } else {
       showAlert("❌ Network error. Please try again.", "danger");
     }
@@ -117,25 +151,11 @@ const deleteInstructor = async (instructor) => {
   }
 };
 
-
-
-
-// const deleteInstructor = async (instructor) => {
-//   if (confirm(`Are you sure you want to delete ${instructor.name}?`)) {
-//     try {
-//       await store.deleteInstructor(instructor.id);
-//       showAlert(`Instructor ${instructor.name} has been deleted successfully.`, "success");
-//     } catch (error) {
-//       showAlert(`Failed to delete instructor: ${instructor.name}.`, "danger");
-//       console.error(error);
-//     }
-//   }
-// };
-
 const goToCreateInstructor = () => {
   router.push("/create-instructor");
 };
 
+// ✅ تحميل البيانات
 onMounted(() => {
   const token = localStorage.getItem("token");
   if (!token) {

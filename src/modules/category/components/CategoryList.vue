@@ -1,82 +1,64 @@
 <template>
-<div v-if="alert.message" :class="['alert', `alert-${alert.type}`]" role="alert">
-  {{ alert.message }}
-</div>
-
   <div class="mt-2">
-    <div class="d-flex flex-row justify-content-between align-items-center flex-wrap">
-      <div class="title">
-        <h1> Categories List</h1>
-      </div>
-      <div class="buttons">
-              <RouterLink
-  type="button"
-  class="btn btn-success d-flex align-items-center gap-2"
-  to="/categories/create"
->
-  <i class="bi bi-plus-lg"></i>
-  Create
-</RouterLink>
-      </div>
+    <div v-if="alert.message" :class="['alert', `alert-${alert.type}`]" role="alert">
+      {{ alert.message }}
     </div>
+
+    <div class="d-flex flex-row justify-content-between align-items-center flex-wrap mb-3">
+      <h1>Categories List</h1>
+      <RouterLink
+        to="/categories/create"
+        class="btn btn-success d-flex align-items-center gap-2"
+      >
+        <i class="bi bi-plus-lg"></i> Create
+      </RouterLink>
+    </div>
+
     <BaseLoading v-if="store.loading" />
+
     <div v-else>
-      <BaseTable
-        :columns="['id','' ,'','name','']"
-        :data="store.categories"
-        :actions="{  delete: true }"
-      
-        @delete="deleteCategory"
-        class="category-table"
-      />
+      <BaseTable :columns="['id','name','actions']" :data="store.categories">
+        <template #actions="{ row }">
+          <button class="btn btn-sm btn-primary me-1" @click="editCategory(row)">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" @click="deleteCategory(row)">
+            <i class="bi bi-trash"></i>
+          </button>
+        </template>
+      </BaseTable>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted , ref} from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted } from "vue";
 import { useCategoryStore } from "../store/categoryStore";
+import { useRouter } from "vue-router";
 import BaseTable from "@/components/base/BaseTable.vue";
 import BaseLoading from "@/components/base/BaseLoading.vue";
-const alert = ref({ message: "", type: "" });
-const router = useRouter();
+
 const store = useCategoryStore();
+const router = useRouter();
+const alert = ref({ message: "", type: "" });
 
-const showCategory = (category) => {
-  alert(`Showing category: ${category.name}`);
+const editCategory = (row) => {
+  router.push(`/categories/edit/${row.id}`);
 };
 
-const editCategory = (category) => {
-  router.push(`/categories/edit/${category.id}`);
-};
-
-const deleteCategory = async (category) => {
-  if (confirm(`Are you sure you want to delete ${category.name}?`)) {
+const deleteCategory = async (row) => {
+  if (confirm(`Are you sure you want to delete "${row.name}"?`)) {
     try {
-      await store.deleteCategory(category.id);
-      alert.value = {
-        message: `✅ Category "${category.name}" deleted successfully!`,
-        type: "success",
-      };
-
-      // اختياري: إخفاء التنبيه بعد 3 ثواني
-      setTimeout(() => {
-        alert.value = { message: "", type: "" };
-      }, 3000);
-    } catch (error) {
-      alert.value = {
-        message: "❌ Failed to delete category.",
-        type: "danger",
-      };
+      await store.deleteCategory(row.id);
+      alert.value = { message: `✅ Category "${row.name}" deleted successfully!`, type: "success" };
+      setTimeout(() => (alert.value = { message: "", type: "" }), 3000);
+    } catch {
+      alert.value = { message: "❌ Failed to delete category.", type: "danger" };
     }
   }
 };
 
-
-onMounted(() => {
-  store.fetchCategories();
-});
+onMounted(() => store.fetchCategories());
 </script>
 
 <style scoped>

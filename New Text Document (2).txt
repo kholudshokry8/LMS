@@ -4,4 +4,5 @@ category create / edit fetch from api
 
 scp -r * root@72.60.44.72:/var/www/portal
 
-Ww1471991#Ww1471991#
+..
+scp -r * root@72.60.44.72:/var/www/main

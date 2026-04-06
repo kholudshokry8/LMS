@@ -43,14 +43,14 @@
             <img :src="getImageUrl(localInstructor.profile_image)" style="max-width:150px" />
           </div>
         </div>
-        <div class="form-group">
+        <!-- <div class="form-group">
           <label>Courses:</label>
           <select v-model="localInstructor.courses" multiple>
             <option v-for="course in allCourses" :key="course.id" :value="Number(course.id)">
               {{ course.title }}
             </option>
           </select>
-        </div>
+        </div> -->
       </div>
 
       <div class="form-row">
